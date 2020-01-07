@@ -3,8 +3,24 @@ module FableReversi.Reversi.Computer.MCTS
 open FableReversi.Reversi
 open FableReversi.Reversi.Runner
 open System
+open System.Collections.Generic
 
 let c = System.Math.Sqrt(2.)
+
+let levelOnePowerSpots =
+    [| (0,0); (0,7); (7,0); (7,7) |]
+    |> Array.map (fun (x,y) -> Bitwise.pos x y)
+    |> HashSet
+
+let levelTwoPowerSpots =
+    [| (2,0); (5,0); (0,2); (7,2); (7,2); (0,5); (7,5); (2,7); (5,7) |]
+    |> Array.map (fun (x,y) -> Bitwise.pos x y)
+    |> HashSet
+
+let levelThreePowerSpots =
+    [| (2,2); (5,2); (2,5); (5,5) |]
+    |> Array.map (fun (x,y) -> Bitwise.pos x y)
+    |> HashSet
 
 [<RequireQualifiedAccess>]
 type Children =
@@ -90,8 +106,25 @@ and Node(parent:Node option,random:Random,board:Board) =
 
                         isDone <- true
                 else
-                    let choice = random.Next(0, moves.Length)
-                    let m = moves.[choice]
+                    let m =
+                        let levelOneMoves = moves |> Array.filter levelOnePowerSpots.Contains
+                        if not (Array.isEmpty levelOneMoves) then
+                            let choice = random.Next(0, levelOneMoves.Length)
+                            levelOneMoves.[choice]
+                        else
+                            let levelTwoMoves = moves |> Array.filter levelTwoPowerSpots.Contains
+                            if not (Array.isEmpty levelTwoMoves) then
+                                let choice = random.Next(0, levelTwoMoves.Length)
+                                levelTwoMoves.[choice]
+                            else
+                                let levelThreeMoves = moves |> Array.filter levelThreePowerSpots.Contains
+                                if not (Array.isEmpty levelThreeMoves) then
+                                    let choice = random.Next(0, levelThreeMoves.Length)
+                                    levelThreeMoves.[choice]
+                                else
+                                    let choice = random.Next(0, moves.Length)
+                                    moves.[choice]
+
                     let move = Board.applyMove m currentBoard
                     currentBoard <- move.Result
 
